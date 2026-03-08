@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,8 +10,7 @@ class ScanScreen extends StatefulWidget {
   State<ScanScreen> createState() => _ScanScreenState();
 }
 
-class _ScanScreenState extends State<ScanScreen>
-    with WidgetsBindingObserver {
+class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
   CameraController? _controller;
   List<CameraDescription> _cameras = [];
   bool _isInitialized = false;
@@ -83,9 +81,9 @@ class _ScanScreenState extends State<ScanScreen>
 
   Future<void> _captureImage() async {
     final controller = _controller;
-    if (controller == null ||
-        !controller.value.isInitialized ||
-        _isCapturing) return;
+    if (controller == null || !controller.value.isInitialized || _isCapturing) {
+      return;
+    }
 
     setState(() => _isCapturing = true);
     try {
@@ -228,24 +226,33 @@ class _ScanScreenState extends State<ScanScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // ── Camera Preview ──────────────────────────────────────────────────
-        Center(
-          child: AspectRatio(
-            aspectRatio: controller.value.aspectRatio,
-            child: CameraPreview(controller),
+        // ── Camera Preview and Overlay ──────────────────────────────────────
+        SafeArea(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: AspectRatio(
+              aspectRatio: 3 / 4,
+              child: ClipRRect(
+                borderRadius:
+                    const BorderRadius.vertical(bottom: Radius.circular(24)),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CameraPreview(controller),
+                    const ScanOverlay(),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
-
-        // ── Scan frame overlay (dims + corner brackets + scan line) ─────────
-        const ScanOverlay(),
 
         // ── Top bar ─────────────────────────────────────────────────────────
         SafeArea(
           child: Column(
             children: [
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: Row(
                   children: [
                     // Back
@@ -260,10 +267,7 @@ class _ScanScreenState extends State<ScanScreen>
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        shadows: [
-                          Shadow(
-                              blurRadius: 8, color: Colors.black54)
-                        ],
+                        shadows: [Shadow(blurRadius: 8, color: Colors.black54)],
                       ),
                     ),
                     const Spacer(),
@@ -283,8 +287,8 @@ class _ScanScreenState extends State<ScanScreen>
 
               // Label under frame
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.45),
                   borderRadius: BorderRadius.circular(20),
@@ -292,8 +296,7 @@ class _ScanScreenState extends State<ScanScreen>
                 ),
                 child: const Text(
                   'Align the medicine label inside the frame',
-                  style:
-                      TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ),
 
@@ -318,23 +321,19 @@ class _ScanScreenState extends State<ScanScreen>
                     GestureDetector(
                       onTap: _isCapturing ? null : _captureImage,
                       child: AnimatedContainer(
-                        duration:
-                            const Duration(milliseconds: 120),
+                        duration: const Duration(milliseconds: 120),
                         width: _isCapturing ? 64 : 72,
                         height: _isCapturing ? 64 : 72,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _isCapturing
-                              ? Colors.white60
-                              : Colors.white,
+                          color: _isCapturing ? Colors.white60 : Colors.white,
                           border: Border.all(
                             color: Colors.white54,
                             width: 4,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.white
-                                  .withValues(alpha: 0.25),
+                              color: Colors.white.withValues(alpha: 0.25),
                               blurRadius: 20,
                               spreadRadius: 4,
                             ),
@@ -400,8 +399,7 @@ class _ScanScreenState extends State<ScanScreen>
               ('Good Lighting', 'Scan in bright light for best results'),
               ('Hold Steady', 'Keep the camera still when capturing'),
               ('Fill the Frame', 'Align the label to fill the scan area'),
-              ('Flat Surface',
-                  'Flatten the strip or box for clearer text'),
+              ('Flat Surface', 'Flatten the strip or box for clearer text'),
               ('Use Flash', 'Toggle flash (⚡) in low-light conditions'),
             ].map(
               (tip) => Padding(
@@ -428,8 +426,7 @@ class _ScanScreenState extends State<ScanScreen>
                         children: [
                           Text(tip.$1,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13)),
+                                  fontWeight: FontWeight.w600, fontSize: 13)),
                           Text(tip.$2,
                               style: TextStyle(
                                   fontSize: 12,

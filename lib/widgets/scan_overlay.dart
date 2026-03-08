@@ -48,15 +48,16 @@ class _ScanFramePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    const frameWidth = 280.0;
-    const frameHeight = 180.0;
-    final left = (size.width - frameWidth) / 2;
-    final top = (size.height - frameHeight) / 2;
+    // Make the frame take up most of the screen width/height with 24px padding
+    final frameWidth = size.width - 48;
+    final frameHeight = size.height - 48;
+    final left = 24.0;
+    final top = 24.0;
     final right = left + frameWidth;
     final bottom = top + frameHeight;
 
     // Dim overlay
-    final dimPaint = Paint()..color = Colors.black.withOpacity(0.5);
+    final dimPaint = Paint()..color = Colors.black.withValues(alpha: 0.5);
     final framePath = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
       ..addRRect(RRect.fromRectAndRadius(
@@ -86,7 +87,7 @@ class _ScanFramePainter extends CustomPainter {
     // Scan line
     final scanY = top + (frameHeight * animation.value);
     final scanPaint = Paint()
-      ..color = const Color(0xFF2196F3).withOpacity(0.8)
+      ..color = const Color(0xFF2196F3).withValues(alpha: 0.8)
       ..strokeWidth = 2.0;
     canvas.drawLine(
       Offset(left + 12, scanY),
