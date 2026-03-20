@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
 import '../models/medicine.dart';
-import '../widgets/medicine_list_tile.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,17 +10,19 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _storageService = StorageService();
+  final StorageService _storageService = StorageService();
+  int _medicineCount = 0;
   List<Medicine> _recentMedicines = [];
 
   @override
   void initState() {
     super.initState();
-    _loadRecents();
+    _loadDashboardData();
   }
 
-  void _loadRecents() {
+  void _loadDashboardData() {
     setState(() {
+      _medicineCount = _storageService.count;
       _recentMedicines = _storageService.getAllMedicines().take(3).toList();
     });
   }
@@ -30,271 +31,311 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
-          // Hero header
-          SliverToBoxAdapter(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    colorScheme.primary,
-                    colorScheme.primary.withOpacity(0.8),
-                  ],
+          // Elegant Header
+          SliverAppBar(
+            expandedHeight: 180,
+            floating: false,
+            pinned: true,
+            stretch: true,
+            backgroundColor: Colors.transparent,
+            flexibleSpace: FlexibleSpaceBar(
+              stretchModes: const [StretchMode.zoomBackground],
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: isDark 
+                      ? [colorScheme.primary.withOpacity(0.3), colorScheme.surface]
+                      : [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
+                  ),
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(32),
+                  ),
                 ),
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(32),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _getGreeting(),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const Text(
+                                  'KnowYourMed',
+                                  style: TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white.withOpacity(0.3)),
+                              ),
+                              child: IconButton(
+                                icon: const Icon(Icons.person_outline_rounded, color: Colors.white),
+                                onPressed: () {},
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'KnowYourMed',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              Text(
-                                'Understand your medicines',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white.withOpacity(0.75),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 28),
-                      // Scan CTA
-                      GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, '/scan')
-                            .then((_) => _loadRecents()),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                                color: Colors.white.withOpacity(0.3)),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Icon(
-                                  Icons.document_scanner_rounded,
-                                  color: colorScheme.primary,
-                                  size: 28,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
-                                  Text(
-                                    'Scan Medicine',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    'Point camera at medicine label',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const Spacer(),
-                              const Icon(Icons.arrow_forward_ios_rounded,
-                                  color: Colors.white70, size: 18),
-                            ],
+            ),
+          ),
+
+          // Search and Stats Section
+          SliverToBoxAdapter(
+            child: Transform.translate(
+              offset: const Offset(0, -30),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  children: [
+                    // Search Bar
+                    _buildSearchBar(theme),
+                    const SizedBox(height: 24),
+                    
+                    // Stats Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildStatCard(
+                            theme, 
+                            'Library Size', 
+                            '$_medicineCount', 
+                            Icons.local_library_rounded,
+                            colorScheme.primaryContainer,
+                            colorScheme.onPrimaryContainer,
                           ),
                         ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildStatCard(
+                            theme, 
+                            'Scans Today', 
+                            '0', 
+                            Icons.qr_code_scanner_rounded,
+                            Colors.orange.withOpacity(0.15),
+                            Colors.orange.shade800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Quick Actions Section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Quick Actions',
+                    style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      _buildActionItem(
+                        context, 
+                        'Scan Now', 
+                        Icons.document_scanner_rounded, 
+                        Colors.blue,
+                        '/scan'
+                      ),
+                      _buildActionItem(
+                        context, 
+                        'My Meds', 
+                        Icons.bookmark_rounded, 
+                        Colors.green,
+                        '/saved'
+                      ),
+                      _buildActionItem(
+                        context, 
+                        'Settings', 
+                        Icons.settings_rounded, 
+                        Colors.blueGrey,
+                        '/settings'
                       ),
                     ],
                   ),
-                ),
-              ),
-            ),
-          ),
-
-          // Recent scans
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Recent Scans',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pushNamed(context, '/saved')
-                        .then((_) => _loadRecents()),
-                    child: const Text('See All'),
-                  ),
                 ],
               ),
             ),
           ),
 
-          if (_recentMedicines.isEmpty)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          // Health Tip Section
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: _buildHealthTipCard(theme),
+            ),
+          ),
+
+          // Recent Activity Section
+          if (_recentMedicines.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.all(24.0),
+              sliver: SliverToBoxAdapter(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.inbox_rounded,
-                        size: 64, color: colorScheme.primary.withOpacity(0.3)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Recently Added',
+                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pushNamed(context, '/saved'),
+                          child: const Text('See All'),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 12),
-                    Text(
-                      'No scans yet',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.5),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Scan a medicine label to get started',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.4),
-                      ),
-                    ),
+                    ..._recentMedicines.map((med) => _buildRecentMedTile(context, med)).toList(),
                   ],
                 ),
               ),
-            )
-          else
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final medicine = _recentMedicines[index];
-                  return MedicineListTile(
-                    medicine: medicine,
-                    onTap: () => Navigator.pushNamed(context, '/detail',
-                            arguments: {'medicine': medicine})
-                        .then((_) => _loadRecents()),
-                  );
-                },
-                childCount: _recentMedicines.length,
-              ),
             ),
 
-          // Quick actions
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _QuickActionCard(
-                      icon: Icons.bookmark_rounded,
-                      label: 'Saved\nMedicines',
-                      onTap: () => Navigator.pushNamed(context, '/saved')
-                          .then((_) => _loadRecents()),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _QuickActionCard(
-                      icon: Icons.history_rounded,
-                      label: 'Scan\nHistory',
-                      onTap: () => Navigator.pushNamed(context, '/saved')
-                          .then((_) => _loadRecents()),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _QuickActionCard(
-                      icon: Icons.settings_rounded,
-                      label: 'App\nSettings',
-                      onTap: () => Navigator.pushNamed(context, '/settings')
-                          .then((_) => _loadRecents()),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SliverToBoxAdapter(child: SizedBox(height: 24)),
+          const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
     );
   }
-}
 
-class _QuickActionCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning ☀️';
+    if (hour < 17) return 'Good Afternoon 🌤️';
+    return 'Good Evening 🌙';
+  }
 
-  const _QuickActionCard({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+  String _getRandomTip() {
+    return _tips[DateTime.now().second % _tips.length];
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
-        decoration: BoxDecoration(
-          color: theme.cardColor,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
+  static const List<String> _tips = [
+    'Always check the expiry date before taking any medicine.',
+    'Store medicines in a cool, dry place away from direct sunlight.',
+    'Keep all medicines out of reach and sight of children.',
+    'Don\'t share your prescription medicines with others.',
+    'Finish the full course of antibiotics as prescribed.',
+    'Read the label carefully for dosage instructions.',
+    'Consult your doctor if you experience any side effects.',
+  ];
+
+  Widget _buildSearchBar(ThemeData theme) {
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: 'Search your medicines...',
+          hintStyle: TextStyle(color: theme.colorScheme.onSurface.withOpacity(0.4)),
+          prefixIcon: Icon(Icons.search_rounded, color: theme.colorScheme.primary),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(ThemeData theme, String label, String value, IconData icon, Color bgColor, Color iconColor) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 24),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            value,
+            style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900, color: iconColor),
+          ),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(color: iconColor.withOpacity(0.7), fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionItem(BuildContext context, String label, IconData icon, Color color, String route) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => Navigator.pushNamed(context, route),
         child: Column(
           children: [
-            Icon(icon, color: theme.colorScheme.primary, size: 26),
+            Container(
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
             const SizedBox(height: 8),
             Text(
               label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
               textAlign: TextAlign.center,
             ),
           ],
@@ -302,4 +343,59 @@ class _QuickActionCard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildHealthTipCard(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [theme.colorScheme.primaryContainer, theme.colorScheme.primaryContainer.withOpacity(0.6)],
+        ),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Health Tip',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _getRandomTip(),
+                  style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          const Icon(Icons.lightbulb_rounded, color: Colors.amber, size: 36),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecentMedTile(BuildContext context, Medicine med) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ListTile(
+        onTap: () => Navigator.pushNamed(context, '/detail', arguments: {'medicine': med}),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(Icons.medication_rounded, color: Theme.of(context).colorScheme.primary),
+        ),
+        title: Text(med.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(med.manufacturer, maxLines: 1, overflow: TextOverflow.ellipsis),
+        trailing: const Icon(Icons.chevron_right_rounded),
+      ),
+    );
+  }
 }
+
