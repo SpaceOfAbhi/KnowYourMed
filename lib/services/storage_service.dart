@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/medicine.dart';
 
@@ -33,6 +34,8 @@ class StorageService {
   Future<void> clearAll() async {
     await _box.clear();
   }
+
+  ValueListenable<Box<Medicine>> get listenable => _box.listenable();
 
   int get count => _box.length;
 }
