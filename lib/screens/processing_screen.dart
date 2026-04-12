@@ -57,7 +57,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
       ocrService.dispose();
 
       final parserService = ParserService();
-      final medicine = parserService.parse(rawText);
+      final medicine = await parserService.parse(rawText);
 
       if (!mounted) return;
       Navigator.pushReplacementNamed(

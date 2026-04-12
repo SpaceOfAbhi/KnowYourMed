@@ -37,6 +37,15 @@ class Medicine extends HiveObject {
   @HiveField(10)
   String rawText;
 
+  @HiveField(11)
+  String medicineClass;
+
+  @HiveField(12)
+  String uses;
+
+  @HiveField(13)
+  String sideEffects;
+
   Medicine({
     required this.id,
     required this.name,
@@ -49,6 +58,9 @@ class Medicine extends HiveObject {
     required this.additionalInfo,
     required this.scannedAt,
     required this.rawText,
+    this.medicineClass = '',
+    this.uses = '',
+    this.sideEffects = '',
   });
 
   Medicine copyWith({
@@ -63,6 +75,9 @@ class Medicine extends HiveObject {
     String? additionalInfo,
     DateTime? scannedAt,
     String? rawText,
+    String? medicineClass,
+    String? uses,
+    String? sideEffects,
   }) {
     return Medicine(
       id: id ?? this.id,
@@ -76,6 +91,9 @@ class Medicine extends HiveObject {
       additionalInfo: additionalInfo ?? this.additionalInfo,
       scannedAt: scannedAt ?? this.scannedAt,
       rawText: rawText ?? this.rawText,
+      medicineClass: medicineClass ?? this.medicineClass,
+      uses: uses ?? this.uses,
+      sideEffects: sideEffects ?? this.sideEffects,
     );
   }
 
@@ -92,6 +110,9 @@ class Medicine extends HiveObject {
       'additionalInfo': additionalInfo,
       'scannedAt': scannedAt.toIso8601String(),
       'rawText': rawText,
+      'medicineClass': medicineClass,
+      'uses': uses,
+      'sideEffects': sideEffects,
     };
   }
 

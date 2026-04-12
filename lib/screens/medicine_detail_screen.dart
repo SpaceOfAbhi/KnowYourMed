@@ -77,22 +77,46 @@ class MedicineDetailScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'SAVED MEDICINE',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.2,
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
+                                'SAVED MEDICINE',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
                             ),
-                          ),
+                            if (m.medicineClass.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.black26,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  m.medicineClass.toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -166,6 +190,13 @@ class MedicineDetailScreen extends StatelessWidget {
                   icon: Icons.science_rounded,
                   accentColor: Colors.blue.shade700,
                 ),
+                if (m.uses.isNotEmpty)
+                  InfoCard(
+                    title: 'Common Uses',
+                    content: m.uses,
+                    icon: Icons.healing_rounded,
+                    accentColor: Colors.indigo.shade600,
+                  ),
                 InfoCard(
                   title: 'Dosage Instructions',
                   content: m.dosage,
@@ -178,6 +209,13 @@ class MedicineDetailScreen extends StatelessWidget {
                   icon: Icons.warning_amber_rounded,
                   accentColor: Colors.orange.shade700,
                 ),
+                if (m.sideEffects.isNotEmpty)
+                  InfoCard(
+                    title: 'Possible Side Effects',
+                    content: m.sideEffects,
+                    icon: Icons.assignment_late_rounded,
+                    accentColor: Colors.red.shade600,
+                  ),
                 InfoCard(
                   title: 'Storage Instructions',
                   content: m.storage,

@@ -1,5 +1,6 @@
 import '../models/medicine.dart';
 import 'package:uuid/uuid.dart';
+import 'knowledge_base_service.dart';
 
 class ParsedMedicine {
   final String name;
@@ -29,9 +30,37 @@ class ParserService {
   static final _uuid = const Uuid();
 
   /// Main entry – parses raw OCR text into a structured [Medicine] object.
-  Medicine parse(String rawText) {
+  Future<Medicine> parse(String rawText) async {
+    // 1. Extract generic features from OCR (Heuristic/Regex)
     final parsed = _extractSections(rawText);
+    
+    // 2. Search for the medicine in the offline Knowledge Base (SQLite)
+    final kbService = KnowledgeBaseService();
+    final match = await kbService.findBestMatch(rawText);
 
+    // 3. Create enriched Medicine object
+    if (match != null) {
+      return Medicine(
+        id: _uuid.v4(),
+        name: match['name'] ?? parsed.name,
+        composition: match['composition'] ?? parsed.composition,
+        dosage: match['dosage'] ?? parsed.dosage,
+        warnings: (match['warnings'] ?? '').isNotEmpty 
+            ? match['warnings'] 
+            : parsed.warnings,
+        storage: parsed.storage,
+        manufacturer: parsed.manufacturer,
+        expiry: parsed.expiry,
+        additionalInfo: parsed.additionalInfo,
+        scannedAt: DateTime.now(),
+        rawText: rawText,
+        medicineClass: match['medicineClass'] ?? '',
+        uses: match['uses'] ?? '',
+        sideEffects: match['sideEffects'] ?? '',
+      );
+    }
+
+    // Fallback if no match found in DB
     return Medicine(
       id: _uuid.v4(),
       name: parsed.name,

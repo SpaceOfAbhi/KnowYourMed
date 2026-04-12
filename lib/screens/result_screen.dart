@@ -77,18 +77,38 @@ class _ResultScreenState extends State<ResultScreen> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (m.expiry.isNotEmpty) ...[
-                          const SizedBox(height: 4),
+                        if (m.expiry.isNotEmpty || m.medicineClass.isNotEmpty) ...[
+                          const SizedBox(height: 8),
                           Row(
                             children: [
-                              const Icon(Icons.event_rounded,
-                                  size: 14, color: Colors.white70),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Exp: ${m.expiry}',
-                                style: const TextStyle(
-                                    color: Colors.white70, fontSize: 13),
-                              ),
+                              if (m.medicineClass.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  margin: const EdgeInsets.only(right: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white24,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    m.medicineClass,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              if (m.expiry.isNotEmpty) ...[
+                                const Icon(Icons.event_rounded,
+                                    size: 14, color: Colors.white70),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Exp: ${m.expiry}',
+                                  style: const TextStyle(
+                                      color: Colors.white70, fontSize: 13),
+                                ),
+                              ],
                             ],
                           ),
                         ],
@@ -113,6 +133,13 @@ class _ResultScreenState extends State<ResultScreen> {
                   icon: Icons.science_rounded,
                   accentColor: Colors.blue.shade700,
                 ),
+                if (m.uses.isNotEmpty)
+                  InfoCard(
+                    title: 'Common Uses',
+                    content: m.uses,
+                    icon: Icons.healing_rounded,
+                    accentColor: Colors.indigo.shade600,
+                  ),
                 InfoCard(
                   title: 'Dosage Instructions',
                   content: m.dosage,
@@ -125,6 +152,13 @@ class _ResultScreenState extends State<ResultScreen> {
                   icon: Icons.warning_amber_rounded,
                   accentColor: Colors.orange.shade700,
                 ),
+                if (m.sideEffects.isNotEmpty)
+                  InfoCard(
+                    title: 'Possible Side Effects',
+                    content: m.sideEffects,
+                    icon: Icons.assignment_late_rounded,
+                    accentColor: Colors.red.shade600,
+                  ),
                 InfoCard(
                   title: 'Storage Instructions',
                   content: m.storage,
