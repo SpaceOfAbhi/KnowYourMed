@@ -1,12 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../models/medicine.dart';
 import '../services/ocr_service.dart';
 import '../services/parser_service.dart';
 
 
 class ProcessingScreen extends StatefulWidget {
   final String imagePath;
-  const ProcessingScreen({super.key, required this.imagePath});
+  final Rect? roi;
+  const ProcessingScreen({super.key, required this.imagePath, this.roi});
 
   @override
   State<ProcessingScreen> createState() => _ProcessingScreenState();
@@ -53,11 +55,11 @@ class _ProcessingScreenState extends State<ProcessingScreen>
     try {
       final file = File(widget.imagePath);
       final ocrService = OcrService();
-      final rawText = await ocrService.extractText(file);
+      final rawText = await ocrService.extractText(file, roi: widget.roi);
       ocrService.dispose();
 
       final parserService = ParserService();
-      final medicine = await parserService.parse(rawText);
+      final Medicine medicine = await parserService.parse(rawText);
 
       if (!mounted) return;
       Navigator.pushReplacementNamed(
@@ -67,12 +69,50 @@ class _ProcessingScreenState extends State<ProcessingScreen>
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error processing image: $e'),
-          backgroundColor: Theme.of(context).colorScheme.error,
+      
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.search_off_rounded, color: Colors.red, size: 28),
+              SizedBox(width: 12),
+              Text('Not Identified'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'We couldn\'t identify this medicine label.',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Tips for better results:\n'
+                '• Ensure good lighting\n'
+                '• Keep the text inside the scan frame\n'
+                '• Avoid glares on the packaging',
+                style: TextStyle(fontSize: 13, height: 1.5),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: const Text('Try Again'),
+            ),
+          ],
         ),
       );
+      
+      if (!mounted) return;
       Navigator.pop(context);
     }
   }

@@ -1,5 +1,6 @@
-import '../models/medicine.dart';
+import 'package:knowyourmed/models/medicine.dart';
 import 'package:uuid/uuid.dart';
+import 'drug_lookup_service.dart';
 import 'knowledge_base_service.dart';
 
 class ParsedMedicine {
@@ -28,51 +29,53 @@ class ParsedMedicine {
 
 class ParserService {
   static final _uuid = const Uuid();
+  final _drugLookup = DrugLookupService();
 
-  /// Main entry – parses raw OCR text into a structured [Medicine] object.
+  /// Main entry – parses raw OCR text.
   Future<Medicine> parse(String rawText) async {
-    // 1. Extract generic features from OCR (Heuristic/Regex)
+    // 1. Extract bottle-specific details (Expiry, etc.)
     final parsed = _extractSections(rawText);
-    
-    // 2. Search for the medicine in the offline Knowledge Base (SQLite)
-    final kbService = KnowledgeBaseService();
-    final match = await kbService.findBestMatch(rawText);
 
-    // 3. Create enriched Medicine object
-    if (match != null) {
-      return Medicine(
-        id: _uuid.v4(),
-        name: match['name'] ?? parsed.name,
-        composition: match['composition'] ?? parsed.composition,
-        dosage: match['dosage'] ?? parsed.dosage,
-        warnings: (match['warnings'] ?? '').isNotEmpty 
-            ? match['warnings'] 
-            : parsed.warnings,
-        storage: parsed.storage,
-        manufacturer: parsed.manufacturer,
-        expiry: parsed.expiry,
-        additionalInfo: parsed.additionalInfo,
-        scannedAt: DateTime.now(),
+    // 2. High-Accuracy ID via RxNav & openFDA
+    final Medicine? officialMatch = await _drugLookup.identify(rawText);
+
+    if (officialMatch != null) {
+      // Merge official data with bottle extractions (like expiry)
+      return officialMatch.copyWith(
+        expiry: parsed.expiry.isNotEmpty ? parsed.expiry : officialMatch.expiry,
         rawText: rawText,
-        medicineClass: match['medicineClass'] ?? '',
-        uses: match['uses'] ?? '',
-        sideEffects: match['sideEffects'] ?? '',
       );
     }
 
-    // Fallback if no match found in DB
+    // 3. Fallback to Local Knowledge Base if offline or API fails
+    final kbService = KnowledgeBaseService();
+    final candidates = await kbService.findTopMatches(rawText);
+
+    if (candidates.isNotEmpty) {
+      final topMatch = candidates.first;
+      return buildMedicine(topMatch, parsed, rawText);
+    }
+
+    throw Exception('Medicine not recognized. Please scan a clearer image.');
+  }
+
+  Medicine buildMedicine(
+      Map<String, dynamic> match, ParsedMedicine parsed, String rawText) {
     return Medicine(
       id: _uuid.v4(),
-      name: parsed.name,
-      composition: parsed.composition,
-      dosage: parsed.dosage,
-      warnings: parsed.warnings,
-      storage: parsed.storage,
-      manufacturer: parsed.manufacturer,
+      name: (match['name'] as String?) ?? parsed.name,
+      composition: (match['composition'] as String?) ?? parsed.composition,
+      dosage: (match['dosage'] as String?) ?? parsed.dosage,
+      warnings: (match['warnings'] as String?) ?? parsed.warnings,
+      storage: (match['storage'] as String?) ?? parsed.storage,
+      manufacturer: (match['manufacturer'] as String?) ?? parsed.manufacturer,
       expiry: parsed.expiry,
-      additionalInfo: parsed.additionalInfo,
+      additionalInfo: 'Identified via local knowledge base.',
       scannedAt: DateTime.now(),
       rawText: rawText,
+      medicineClass: match['medicineClass'] ?? '',
+      uses: match['uses'] ?? '',
+      isVerified: false,
     );
   }
 
@@ -92,20 +95,18 @@ class ParserService {
         r'^(warning|caution|contraindication|do\s+not|precaution|adverse\s+effect)',
         caseSensitive: false);
 
-    final storageRe = RegExp(
-        r'^(store|storage|keep|protect|shelf\s+life)',
+    final storageRe = RegExp(r'^(store|storage|keep|protect|shelf\s+life)',
         caseSensitive: false);
 
     final manufacturerRe = RegExp(
         r'^(mfg\.?|mfr\.?|manufactured\s+by|marketed\s+by|distributed\s+by|marketed\s+&\s+distributed)',
         caseSensitive: false);
 
-    final expiryRe = RegExp(
-        r'(exp\.?\s*date|expiry|use\s+before)',
-        caseSensitive: false);
+    final expiryRe =
+        RegExp(r'(exp\.?\s*date|expiry|use\s+before)', caseSensitive: false);
 
-    final expiryValueRe = RegExp(
-        r'\b(\d{2}[/\-]\d{4}|\d{2}[/\-]\d{2}[/\-]\d{2,4}|\d{4})\b');
+    final expiryValueRe =
+        RegExp(r'\b(\d{2}[/\-]\d{4}|\d{2}[/\-]\d{2}[/\-]\d{2,4}|\d{4})\b');
 
     // ── Section buffers ──────────────────────────────────────────────────────
     String name = '';
@@ -200,7 +201,8 @@ class ParserService {
     // Fallback name
     if (name.isEmpty) {
       name = lines.isNotEmpty
-          ? lines.firstWhere((l) => l.length > 3, orElse: () => 'Unknown Medicine')
+          ? lines.firstWhere((l) => l.length > 3,
+              orElse: () => 'Unknown Medicine')
           : 'Unknown Medicine';
     }
 

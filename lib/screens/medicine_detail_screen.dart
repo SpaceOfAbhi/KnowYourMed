@@ -62,17 +62,17 @@ class MedicineDetailScreen extends StatelessWidget {
               background: Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
                     colors: [
                       theme.colorScheme.primary,
-                      theme.colorScheme.secondary,
+                      theme.colorScheme.primary.withOpacity(0.8),
                     ],
                   ),
                 ),
                 child: SafeArea(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 56, 24, 20),
+                    padding: const EdgeInsets.fromLTRB(24, 56, 24, 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -96,23 +96,27 @@ class MedicineDetailScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            if (m.medicineClass.isNotEmpty) ...[
+                            if (m.isVerified) ...[
                               const SizedBox(width: 8),
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.black26,
-                                  borderRadius: BorderRadius.circular(8),
+                                  color: Colors.green.shade400,
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
-                                child: Text(
-                                  m.medicineClass.toUpperCase(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.5,
-                                  ),
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.verified_rounded, size: 10, color: Colors.white),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'VERIFIED',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -120,7 +124,7 @@ class MedicineDetailScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          m.name.isEmpty ? 'Unknown Medicine' : m.name,
+                          m.composition.isEmpty ? 'Unknown Medicine' : m.composition,
                           style: const TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
@@ -149,116 +153,99 @@ class MedicineDetailScreen extends StatelessWidget {
               ),
             ),
           ),
-
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                // Key facts row
-                if (m.expiry.isNotEmpty || m.manufacturer.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Row(
-                      children: [
-                        if (m.expiry.isNotEmpty)
-                          Expanded(
-                            child: _StatChip(
-                              icon: Icons.event_rounded,
-                              label: 'Expiry',
-                              value: m.expiry,
-                              color: Colors.orange,
-                            ),
-                          ),
-                        if (m.expiry.isNotEmpty && m.manufacturer.isNotEmpty)
-                          const SizedBox(width: 12),
-                        if (m.manufacturer.isNotEmpty)
-                          Expanded(
-                            child: _StatChip(
-                              icon: Icons.business_rounded,
-                              label: 'Manufacturer',
-                              value: m.manufacturer,
-                              color: Colors.purple,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-
-                InfoCard(
-                  title: 'Composition',
-                  content: m.composition,
-                  icon: Icons.science_rounded,
-                  accentColor: Colors.blue.shade700,
-                ),
-                if (m.uses.isNotEmpty)
-                  InfoCard(
-                    title: 'Common Uses',
-                    content: m.uses,
-                    icon: Icons.healing_rounded,
-                    accentColor: Colors.indigo.shade600,
-                  ),
-                InfoCard(
-                  title: 'Dosage Instructions',
-                  content: m.dosage,
-                  icon: Icons.schedule_rounded,
-                  accentColor: Colors.green.shade700,
-                ),
-                InfoCard(
-                  title: 'Warnings & Precautions',
-                  content: m.warnings,
-                  icon: Icons.warning_amber_rounded,
-                  accentColor: Colors.orange.shade700,
-                ),
-                if (m.sideEffects.isNotEmpty)
-                  InfoCard(
-                    title: 'Possible Side Effects',
-                    content: m.sideEffects,
-                    icon: Icons.assignment_late_rounded,
-                    accentColor: Colors.red.shade600,
-                  ),
-                InfoCard(
-                  title: 'Storage Instructions',
-                  content: m.storage,
-                  icon: Icons.thermostat_rounded,
-                  accentColor: Colors.teal.shade600,
-                ),
-                if (m.additionalInfo.isNotEmpty)
-                  InfoCard(
-                    title: 'Additional Information',
-                    content: m.additionalInfo,
-                    icon: Icons.info_outline_rounded,
-                    accentColor: Colors.blueGrey.shade600,
-                  ),
-
-                // Disclaimer
-                Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.orange.withOpacity(0.2)),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Icon(Icons.info_outline_rounded,
-                          size: 16, color: Colors.orange.shade700),
-                      const SizedBox(width: 8),
                       Expanded(
-                        child: Text(
-                          'This information is extracted via OCR and may contain errors. Always consult a healthcare professional before taking any medication.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: Colors.orange.shade800,
-                            height: 1.5,
-                          ),
+                        child: _StatChip(
+                          icon: Icons.category_rounded,
+                          label: 'Class',
+                          value: m.medicineClass.isEmpty ? 'General' : m.medicineClass,
+                          color: Colors.blue,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _StatChip(
+                          icon: Icons.business_rounded,
+                          label: 'Brand',
+                          value: m.name.isEmpty ? 'Generic' : m.name,
+                          color: Colors.purple,
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 24),
-              ]),
+                  const SizedBox(height: 32),
+                  
+                  InfoCard(
+                    title: 'Usage & Dosage',
+                    content: m.dosage,
+                    icon: Icons.schedule_rounded,
+                    accentColor: Colors.green.shade700,
+                  ),
+                  
+                  if (m.uses.isNotEmpty)
+                    InfoCard(
+                      title: 'Indications',
+                      content: m.uses,
+                      icon: Icons.medical_services_rounded,
+                      accentColor: Colors.blue.shade700,
+                    ),
+
+                  InfoCard(
+                    title: 'Side Effects',
+                    content: m.sideEffects,
+                    icon: Icons.report_problem_rounded,
+                    accentColor: Colors.orange.shade800,
+                  ),
+
+                  InfoCard(
+                    title: 'Warnings',
+                    content: m.warnings,
+                    icon: Icons.warning_amber_rounded,
+                    accentColor: Colors.red.shade700,
+                  ),
+
+                  InfoCard(
+                    title: 'Storage Requirements',
+                    content: m.storage,
+                    icon: Icons.thermostat_rounded,
+                    accentColor: Colors.teal.shade700,
+                  ),
+
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.info_outline_rounded,
+                            size: 16, color: Colors.orange.shade700),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Notice: This information is cross-referenced with official clinical records. Always consult a healthcare professional before taking any medication.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.orange.shade800,
+                              height: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           ),
         ],

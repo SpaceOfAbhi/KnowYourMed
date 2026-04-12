@@ -99,16 +99,27 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
 
       final XFile photo = await controller.takePicture();
 
-      // Restore torch if it was on
-      if (_flashMode == FlashMode.torch) {
-        await controller.setFlashMode(FlashMode.torch);
-      }
-
       if (!mounted) return;
+      
+      // Ensure flash is OFF before navigating away
+      await controller.setFlashMode(FlashMode.off);
+      setState(() => _flashMode = FlashMode.off);
+      
+      final screenSize = MediaQuery.sizeOf(context);
+      final roi = Rect.fromLTRB(
+        24 / screenSize.width,
+        24 / screenSize.height,
+        (screenSize.width - 24) / screenSize.width,
+        (screenSize.height - 24) / screenSize.height,
+      );
+
       Navigator.pushNamed(
         context,
         '/processing',
-        arguments: {'imagePath': photo.path},
+        arguments: {
+          'imagePath': photo.path,
+          'roi': roi,
+        },
       );
     } catch (e) {
       if (mounted) {

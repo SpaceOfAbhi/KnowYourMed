@@ -46,6 +46,9 @@ class Medicine extends HiveObject {
   @HiveField(13)
   String sideEffects;
 
+  @HiveField(14)
+  bool isVerified;
+
   Medicine({
     required this.id,
     required this.name,
@@ -61,6 +64,7 @@ class Medicine extends HiveObject {
     this.medicineClass = '',
     this.uses = '',
     this.sideEffects = '',
+    this.isVerified = false,
   });
 
   Medicine copyWith({
@@ -78,6 +82,7 @@ class Medicine extends HiveObject {
     String? medicineClass,
     String? uses,
     String? sideEffects,
+    bool? isVerified,
   }) {
     return Medicine(
       id: id ?? this.id,
@@ -94,6 +99,7 @@ class Medicine extends HiveObject {
       medicineClass: medicineClass ?? this.medicineClass,
       uses: uses ?? this.uses,
       sideEffects: sideEffects ?? this.sideEffects,
+      isVerified: isVerified ?? this.isVerified,
     );
   }
 

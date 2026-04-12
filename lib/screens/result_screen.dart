@@ -67,7 +67,7 @@ class _ResultScreenState extends State<ResultScreen> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Text(
-                          m.name.isEmpty ? 'Unknown Medicine' : m.name,
+                          m.composition.isEmpty ? 'Unknown Medicine' : m.composition,
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w800,
@@ -77,10 +77,34 @@ class _ResultScreenState extends State<ResultScreen> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (m.expiry.isNotEmpty || m.medicineClass.isNotEmpty) ...[
+                        if (m.isVerified || m.expiry.isNotEmpty || m.medicineClass.isNotEmpty) ...[
                           const SizedBox(height: 8),
                           Row(
                             children: [
+                              if (m.isVerified)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  margin: const EdgeInsets.only(right: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade400,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.verified_rounded, size: 10, color: Colors.white),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'VERIFIED BY FDA',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               if (m.medicineClass.isNotEmpty)
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -141,7 +165,7 @@ class _ResultScreenState extends State<ResultScreen> {
                     accentColor: Colors.indigo.shade600,
                   ),
                 InfoCard(
-                  title: 'Dosage Instructions',
+                  title: 'Usage & Dosage',
                   content: m.dosage,
                   icon: Icons.schedule_rounded,
                   accentColor: Colors.green.shade700,
@@ -165,13 +189,6 @@ class _ResultScreenState extends State<ResultScreen> {
                   icon: Icons.thermostat_rounded,
                   accentColor: Colors.teal.shade600,
                 ),
-                if (m.manufacturer.isNotEmpty)
-                  InfoCard(
-                    title: 'Manufacturer',
-                    content: m.manufacturer,
-                    icon: Icons.business_rounded,
-                    accentColor: Colors.purple.shade600,
-                  ),
                 if (m.additionalInfo.isNotEmpty)
                   InfoCard(
                     title: 'Additional Information',

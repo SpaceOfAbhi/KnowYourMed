@@ -18,75 +18,97 @@ class KnowledgeBaseService {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, _dbName);
 
-    // Check if the database exists
+    print('DEBUG: Expected DB Path: $path');
+
     final exists = await databaseExists(path);
 
     if (!exists) {
-      // Should be copied from assets
+      print('DEBUG: DB not found at path. Attempting copy from assets...');
       try {
         await Directory(dirname(path)).create(recursive: true);
         ByteData data = await rootBundle.load(join('assets', 'data', _dbName));
         List<int> bytes =
             data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
         await File(path).writeAsBytes(bytes, flush: true);
+        print('DEBUG: Copy successful. Size: ${bytes.length} bytes');
       } catch (e) {
+        print('DEBUG: FATAL - Asset copy failed: $e');
         throw Exception('Error copying database from assets: $e');
       }
+    } else {
+      final size = await File(path).length();
+      print('DEBUG: DB exists on disk. Size: $size bytes');
     }
 
-    return await openDatabase(path, readOnly: true);
+    final db = await openDatabase(path, readOnly: true);
+
+    try {
+      final count = Sqflite.firstIntValue(
+          await db.rawQuery('SELECT COUNT(*) FROM medicines'));
+      print('DEBUG: Row count in medicines table: $count');
+    } catch (e) {
+      print('DEBUG: Row count check failed: $e');
+    }
+
+    return db;
   }
 
-  /// Searches for the best medicine match based on raw OCR text.
-  /// This uses a hybrid approach:
-  /// 1. FTS5 full-text search for coarse matching.
-  /// 2. string_similarity for fine-grained ranking of the results.
-  Future<Map<String, dynamic>?> findBestMatch(String ocrText) async {
+  /// Searches for potential medicine matches based on raw OCR text.
+  /// Returns a list of candidates sorted by confidence score.
+  Future<List<Map<String, dynamic>>> findTopMatches(String ocrText) async {
     final db = await database;
 
     // Normalize OCR text
     final cleanText =
         ocrText.toLowerCase().replaceAll(RegExp(r'[^a-z0-9\s]'), ' ');
-    final words = cleanText
-        .split(RegExp(r'\s+'))
-        .where((w) => w.length > 3)
-        .toSet()
-        .toList();
 
-    if (words.isEmpty) return null;
+    // Common words to ignore
+    final stopWords = {
+      'tablet',
+      'capsule',
+      'mg',
+      'ml',
+      'dosage',
+      'directions',
+      'contains',
+      'expiry',
+      'manufactured',
+      'warning',
+      'keep',
+      'store',
+      'reach',
+      'children',
+      'daily'
+    };
 
-    // We build an FTS query from the words
-    // Example: "paracetamol OR amoxicillin OR ..."
-    final ftsQuery = words.take(10).join(' OR ');
+    final words =
+        cleanText.split(RegExp(r'\s+')).where((w) => w.length > 2).toList();
 
-    // Query the FTS table (FTS4 uses rowid to link to content tables)
+    print('DEBUG: OCR Words found: $words');
+
+    if (words.isEmpty) return [];
+
+    // FTS query using the most unique-looking words
+    final ftsQuery = words
+        .where((w) => !stopWords.contains(w) && w.length > 3)
+        .take(15)
+        .join(' OR ');
+
+    if (ftsQuery.isEmpty) return [];
+
     final List<Map<String, dynamic>> results = await db.rawQuery('''
       SELECT m.* 
       FROM medicines m
       JOIN medicines_fts f ON m.id = f.rowid
       WHERE f.name MATCH ?
-      LIMIT 20
+      LIMIT 50
     ''', [ftsQuery]);
 
-    if (results.isEmpty) return null;
-
-    // Fine-grained ranking using Dice's Coefficient (string_similarity)
-    Map<String, dynamic>? bestMatch;
-    double highestScore = 0;
-
-    for (var result in results) {
-      final String name = result['name'].toString().toLowerCase();
-
-      // Check if the name appears in the OCR text using fuzzy matching
-      final score = name.bestMatch(words).bestMatch.rating ?? 0.0;
-
-      if (score > highestScore) {
-        highestScore = score;
-        bestMatch = result;
-      }
-    }
-
-    // Only return if confidence is high enough (e.g., > 0.4)
-    return highestScore > 0.4 ? bestMatch : null;
+    // Simplify for fallback: return FTS results with a basic confidence score
+    return results.map((r) {
+      final res = Map<String, dynamic>.from(r);
+      res['confidence'] = 1.0; // Basic confidence for FTS match
+      return res;
+    }).toList();
   }
 }

@@ -51,7 +51,7 @@ class MedicineListTile extends StatelessWidget {
           child: const Icon(Icons.medication_rounded, color: Colors.white, size: 22),
         ),
         title: Text(
-          medicine.name.isEmpty ? 'Unknown Medicine' : medicine.name,
+          medicine.composition.isEmpty ? 'Unknown Medicine' : medicine.composition,
           style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -59,16 +59,6 @@ class MedicineListTile extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 2),
-            if (medicine.composition.isNotEmpty)
-              Text(
-                medicine.composition,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
             const SizedBox(height: 2),
             Row(
               children: [

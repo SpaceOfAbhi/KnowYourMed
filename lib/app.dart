@@ -38,7 +38,10 @@ class KnowYourMedApp extends StatelessWidget {
             if (settings.name == '/processing') {
               final args = settings.arguments as Map<String, dynamic>;
               return MaterialPageRoute(
-                builder: (_) => ProcessingScreen(imagePath: args['imagePath']),
+                builder: (_) => ProcessingScreen(
+                  imagePath: args['imagePath'],
+                  roi: args['roi'],
+                ),
               );
             }
             if (settings.name == '/result') {
@@ -50,7 +53,8 @@ class KnowYourMedApp extends StatelessWidget {
             if (settings.name == '/detail') {
               final args = settings.arguments as Map<String, dynamic>;
               return MaterialPageRoute(
-                builder: (_) => MedicineDetailScreen(medicine: args['medicine']),
+                builder: (_) =>
+                    MedicineDetailScreen(medicine: args['medicine']),
               );
             }
             return null;
@@ -93,7 +97,8 @@ class KnowYourMedApp extends StatelessWidget {
           backgroundColor: seedColor,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           elevation: 2,
           textStyle: const TextStyle(
             fontFamily: 'Inter',
@@ -105,7 +110,8 @@ class KnowYourMedApp extends StatelessWidget {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: seedColor,
-          textStyle: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
+          textStyle:
+              const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -144,7 +150,8 @@ class KnowYourMedApp extends StatelessWidget {
           backgroundColor: const Color(0xFF1565C0),
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           elevation: 2,
           textStyle: const TextStyle(
             fontFamily: 'Inter',
