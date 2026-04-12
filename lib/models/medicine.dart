@@ -49,6 +49,9 @@ class Medicine extends HiveObject {
   @HiveField(14)
   bool isVerified;
 
+  @HiveField(15)
+  String? rxcui;
+
   Medicine({
     required this.id,
     required this.name,
@@ -65,6 +68,7 @@ class Medicine extends HiveObject {
     this.uses = '',
     this.sideEffects = '',
     this.isVerified = false,
+    this.rxcui,
   });
 
   Medicine copyWith({
@@ -83,6 +87,7 @@ class Medicine extends HiveObject {
     String? uses,
     String? sideEffects,
     bool? isVerified,
+    String? rxcui,
   }) {
     return Medicine(
       id: id ?? this.id,
@@ -100,6 +105,7 @@ class Medicine extends HiveObject {
       uses: uses ?? this.uses,
       sideEffects: sideEffects ?? this.sideEffects,
       isVerified: isVerified ?? this.isVerified,
+      rxcui: rxcui ?? this.rxcui,
     );
   }
 
@@ -117,8 +123,9 @@ class Medicine extends HiveObject {
       'scannedAt': scannedAt.toIso8601String(),
       'rawText': rawText,
       'medicineClass': medicineClass,
-      'uses': uses,
       'sideEffects': sideEffects,
+      'isVerified': isVerified,
+      'rxcui': rxcui,
     };
   }
 

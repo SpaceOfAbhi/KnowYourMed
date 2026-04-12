@@ -2,16 +2,48 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/medicine.dart';
 import '../services/storage_service.dart';
+import '../services/drug_lookup_service.dart';
 import '../widgets/info_card.dart';
 
-class MedicineDetailScreen extends StatelessWidget {
+class MedicineDetailScreen extends StatefulWidget {
   final Medicine medicine;
   const MedicineDetailScreen({super.key, required this.medicine});
 
   @override
+  State<MedicineDetailScreen> createState() => _MedicineDetailScreenState();
+}
+
+class _MedicineDetailScreenState extends State<MedicineDetailScreen> {
+  List<Map<String, String>>? _interactions;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInteractions();
+  }
+
+  Future<void> _checkInteractions() async {
+    final rxcui = widget.medicine.rxcui;
+    if (rxcui == null || rxcui.isEmpty) return;
+    
+    final storage = StorageService();
+    final others = storage.getAllMedicines()
+        .where((m) => m.rxcui != null && m.rxcui!.isNotEmpty && m.id != widget.medicine.id)
+        .map((m) => m.rxcui!)
+        .toSet()
+        .toList();
+        
+    if (others.isNotEmpty) {
+      final lookup = DrugLookupService();
+      final res = await lookup.checkInteractions(rxcui, others);
+      if (mounted) setState(() => _interactions = res);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final m = medicine;
+    final m = widget.medicine;
     final dateStr =
         DateFormat('MMMM d, yyyy • hh:mm a').format(m.scannedAt);
 
@@ -180,7 +212,12 @@ class MedicineDetailScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 16),
+                  
+                  if (_interactions != null && _interactions!.isNotEmpty)
+                    _InteractionAlert(interactions: _interactions!),
+
+                  const SizedBox(height: 16),
                   
                   InfoCard(
                     title: 'Usage & Dosage',
@@ -189,13 +226,12 @@ class MedicineDetailScreen extends StatelessWidget {
                     accentColor: Colors.green.shade700,
                   ),
                   
-                  if (m.uses.isNotEmpty)
-                    InfoCard(
-                      title: 'Indications',
-                      content: m.uses,
-                      icon: Icons.medical_services_rounded,
-                      accentColor: Colors.blue.shade700,
-                    ),
+                  InfoCard(
+                    title: 'Indications',
+                    content: m.uses,
+                    icon: Icons.medical_services_rounded,
+                    accentColor: Colors.blue.shade700,
+                  ),
 
                   InfoCard(
                     title: 'Side Effects',
@@ -305,6 +341,68 @@ class _StatChip extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InteractionAlert extends StatelessWidget {
+  final List<Map<String, String>> interactions;
+  
+  const _InteractionAlert({required this.interactions});
+
+  @override
+  Widget build(BuildContext context) {
+    bool hasHigh = interactions.any((i) => i['severity'] == 'High');
+    final color = hasHigh ? Colors.red : Colors.orange;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.5), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: color, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  hasHigh ? 'Critical Interaction Alert' : 'Potential Interactions detected',
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'This medicine interacts with your saved medications:',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+          const SizedBox(height: 8),
+          ...interactions.map((i) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Column(
+               crossAxisAlignment: CrossAxisAlignment.start,
+               children: [
+                 Text('• ${i['interactingDrug']}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                 if ((i['description'] ?? '').isNotEmpty)
+                   Padding(
+                     padding: const EdgeInsets.only(left: 12, top: 2),
+                     child: Text(i['description']!, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8), fontSize: 12)),
+                   ),
+               ]
+            ),
+          )),
         ],
       ),
     );

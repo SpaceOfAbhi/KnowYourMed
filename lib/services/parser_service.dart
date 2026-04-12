@@ -1,7 +1,6 @@
 import 'package:knowyourmed/models/medicine.dart';
 import 'package:uuid/uuid.dart';
 import 'drug_lookup_service.dart';
-import 'knowledge_base_service.dart';
 
 class ParsedMedicine {
   final String name;
@@ -28,16 +27,20 @@ class ParsedMedicine {
 }
 
 class ParserService {
-  static final _uuid = const Uuid();
   final _drugLookup = DrugLookupService();
+  static final _uuid = const Uuid();
 
   /// Main entry – parses raw OCR text.
   Future<Medicine> parse(String rawText) async {
-    // 1. Extract bottle-specific details (Expiry, etc.)
+    // 1. Extract bottle-specific details (name, composition, dosage, etc.)
     final parsed = _extractSections(rawText);
 
-    // 2. High-Accuracy ID via RxNav & openFDA
-    final Medicine? officialMatch = await _drugLookup.identify(rawText);
+    // 2. Generate Identification Candidates (Specific -> Broad -> Generic)
+    final List<String> candidates = _generateCandidates(rawText, parsed);
+    print('DEBUG: Generated ${candidates.length} search candidates: $candidates');
+
+    // 3. High-Accuracy ID via RxNav & openFDA (Tiered Search)
+    final Medicine? officialMatch = await _drugLookup.identify(candidates);
 
     if (officialMatch != null) {
       // Merge official data with bottle extractions (like expiry)
@@ -47,37 +50,36 @@ class ParserService {
       );
     }
 
-    // 3. Fallback to Local Knowledge Base if offline or API fails
-    final kbService = KnowledgeBaseService();
-    final candidates = await kbService.findTopMatches(rawText);
-
-    if (candidates.isNotEmpty) {
-      final topMatch = candidates.first;
-      return buildMedicine(topMatch, parsed, rawText);
-    }
-
-    throw Exception('Medicine not recognized. Please scan a clearer image.');
+    // 4. OCR Fallback: build an unverified Medicine from label text
+    //    (covers Indian/regional brands not in US FDA database)
+    print('DEBUG: No official match found – falling back to OCR-only result.');
+    return _buildOcrFallback(parsed, rawText);
   }
 
-  Medicine buildMedicine(
-      Map<String, dynamic> match, ParsedMedicine parsed, String rawText) {
+  /// Constructs an unverified Medicine from raw OCR sections.
+  Medicine _buildOcrFallback(ParsedMedicine parsed, String rawText) {
     return Medicine(
       id: _uuid.v4(),
-      name: (match['name'] as String?) ?? parsed.name,
-      composition: (match['composition'] as String?) ?? parsed.composition,
-      dosage: (match['dosage'] as String?) ?? parsed.dosage,
-      warnings: (match['warnings'] as String?) ?? parsed.warnings,
-      storage: (match['storage'] as String?) ?? parsed.storage,
-      manufacturer: (match['manufacturer'] as String?) ?? parsed.manufacturer,
+      name: parsed.name,
+      composition: parsed.composition.isNotEmpty
+          ? parsed.composition
+          : parsed.name,
+      dosage: parsed.dosage,
+      warnings: parsed.warnings,
+      storage: parsed.storage,
+      manufacturer: parsed.manufacturer,
       expiry: parsed.expiry,
-      additionalInfo: 'Identified via local knowledge base.',
+      additionalInfo: parsed.additionalInfo,
       scannedAt: DateTime.now(),
       rawText: rawText,
-      medicineClass: match['medicineClass'] ?? '',
-      uses: match['uses'] ?? '',
+      medicineClass: '',
+      uses: '',
+      sideEffects: '',
       isVerified: false,
     );
   }
+
+  // buildMedicine is no longer needed since officialMatch returns a full model
 
   ParsedMedicine _extractSections(String rawText) {
     final lines = rawText.split('\n').map((l) => l.trim()).toList();
@@ -232,5 +234,80 @@ class ParserService {
         .replaceFirst(re, '')
         .replaceFirst(RegExp(r'^[\s:]+'), '')
         .trim();
+  }
+  List<String> _generateCandidates(String rawText, [ParsedMedicine? parsed]) {
+    final lines = rawText.split('\n').map((l) => l.trim()).toList();
+    final List<String> candidates = [];
+
+    // 1. Identify Strength Part (e.g., 500mg, 10ml, 5%)
+    final strengthRe = RegExp(
+        r'(\d+(?:\.\d+)?)\s*(mg|g|ml|mcg|%|units|IU)\b',
+        caseSensitive: false);
+    String strength = '';
+    for (var line in lines) {
+      final match = strengthRe.firstMatch(line);
+      if (match != null) {
+        strength = match.group(0)!;
+        break;
+      }
+    }
+
+    // 2. Identify potential name parts (top of label)
+    final noiseKeywords = [
+      'tablet', 'capsule', 'daily', 'take', 'expiry', 'exp',
+      'lot', 'batch', 'mfd', 'rx only'
+    ];
+    List<String> validLines = [];
+    for (var line in lines.take(6)) {
+      if (line.length < 3) continue;
+      bool isNoise = noiseKeywords.any((k) => line.toLowerCase().contains(k));
+      if (!isNoise) validLines.add(line);
+    }
+
+    if (validLines.isNotEmpty) {
+      final firstLine = validLines.first;
+
+      // Tier 1: Specific Name + Strength
+      if (strength.isNotEmpty) {
+        if (firstLine.toLowerCase().contains(strength.toLowerCase())) {
+          candidates.add(firstLine);
+        } else {
+          candidates.add('$firstLine $strength');
+        }
+      }
+
+      // Tier 2: Pure First Line (brand name only)
+      candidates.add(firstLine);
+
+      // Tier 3: Combined top two lines (for multi-word brands)
+      if (validLines.length >= 2) {
+        candidates.add('${validLines[0]} ${validLines[1]}');
+      }
+    }
+
+    // Tier 4: Generic / active-ingredient names from composition section
+    // This is the key tier for Indian brands like Dolo (Paracetamol),
+    // Pantocid (Pantoprazole), etc.
+    final compositionText = parsed?.composition ?? '';
+    if (compositionText.isNotEmpty) {
+      // Split on common separators and extract word-only fragments
+      final genericRe = RegExp(r'[A-Za-z][A-Za-z\s\-]+');
+      for (final m in genericRe.allMatches(compositionText)) {
+        final fragment = m.group(0)!.trim();
+        // Must be at least 4 chars and not a common noise word
+        if (fragment.length >= 4 &&
+            !noiseKeywords.any((k) =>
+                fragment.toLowerCase().contains(k))) {
+          // Add generic name, and generic + strength for precise lookup
+          candidates.add(fragment);
+          if (strength.isNotEmpty) {
+            candidates.add('$fragment $strength');
+          }
+        }
+      }
+    }
+
+    // Deduplicate and filter empty
+    return candidates.where((c) => c.trim().isNotEmpty).toSet().toList();
   }
 }

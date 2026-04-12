@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../models/medicine.dart';
 import '../services/ocr_service.dart';
 import '../services/parser_service.dart';
+import '../services/drug_lookup_service.dart';
+import '../services/storage_service.dart';
 
 
 class ProcessingScreen extends StatefulWidget {
@@ -24,6 +26,7 @@ class _ProcessingScreenState extends State<ProcessingScreen>
     'Reading medicine label...',
     'Analyzing text structure...',
     'Extracting medicine info...',
+    'Checking for interactions...',
     'Organizing data...',
   ];
   int _stepIndex = 0;
@@ -61,11 +64,33 @@ class _ProcessingScreenState extends State<ProcessingScreen>
       final parserService = ParserService();
       final Medicine medicine = await parserService.parse(rawText);
 
+      List<Map<String, String>> interactions = [];
+      if (medicine.rxcui != null && medicine.rxcui!.isNotEmpty) {
+        final storage = StorageService();
+        final savedMedicines = storage.getAllMedicines();
+        final otherRxcuis = savedMedicines
+            .where((m) =>
+                m.rxcui != null &&
+                m.rxcui!.isNotEmpty &&
+                m.id != medicine.id)
+            .map((m) => m.rxcui!)
+            .toSet()
+            .toList();
+
+        if (otherRxcuis.isNotEmpty) {
+          final lookup = DrugLookupService();
+          interactions = await lookup.checkInteractions(medicine.rxcui!, otherRxcuis);
+        }
+      }
+
       if (!mounted) return;
       Navigator.pushReplacementNamed(
         context,
         '/result',
-        arguments: {'medicine': medicine},
+        arguments: {
+          'medicine': medicine,
+          'interactions': interactions,
+        },
       );
     } catch (e) {
       if (!mounted) return;

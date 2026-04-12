@@ -47,7 +47,10 @@ class KnowYourMedApp extends StatelessWidget {
             if (settings.name == '/result') {
               final args = settings.arguments as Map<String, dynamic>;
               return MaterialPageRoute(
-                builder: (_) => ResultScreen(medicine: args['medicine']),
+                builder: (_) => ResultScreen(
+                  medicine: args['medicine'],
+                  interactions: args['interactions'] as List<Map<String, String>>?,
+                ),
               );
             }
             if (settings.name == '/detail') {

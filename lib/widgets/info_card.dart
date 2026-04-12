@@ -19,7 +19,9 @@ class InfoCard extends StatelessWidget {
     final theme = Theme.of(context);
     final color = accentColor ?? theme.colorScheme.primary;
 
-    if (content.trim().isEmpty) return const SizedBox.shrink();
+    final String displayContent = content.trim().isEmpty 
+        ? 'No official information was provided for this section in the FDA drug label database.' 
+        : content;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -67,7 +69,7 @@ class InfoCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              content,
+              displayContent,
               style: theme.textTheme.bodyMedium?.copyWith(
                 height: 1.6,
                 color: theme.colorScheme.onSurface.withOpacity(0.85),

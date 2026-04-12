@@ -28,13 +28,18 @@ class MedicineAdapter extends TypeAdapter<Medicine> {
       additionalInfo: fields[8] as String,
       scannedAt: fields[9] as DateTime,
       rawText: fields[10] as String,
+      medicineClass: fields[11] as String? ?? '',
+      uses: fields[12] as String? ?? '',
+      sideEffects: fields[13] as String? ?? '',
+      isVerified: fields[14] as bool? ?? false,
+      rxcui: fields[15] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Medicine obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -56,7 +61,17 @@ class MedicineAdapter extends TypeAdapter<Medicine> {
       ..writeByte(9)
       ..write(obj.scannedAt)
       ..writeByte(10)
-      ..write(obj.rawText);
+      ..write(obj.rawText)
+      ..writeByte(11)
+      ..write(obj.medicineClass)
+      ..writeByte(12)
+      ..write(obj.uses)
+      ..writeByte(13)
+      ..write(obj.sideEffects)
+      ..writeByte(14)
+      ..write(obj.isVerified)
+      ..writeByte(15)
+      ..write(obj.rxcui);
   }
 
   @override
